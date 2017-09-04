@@ -22,11 +22,16 @@ class TaptapdataItem(scrapy.Item):
     game_version = scrapy.Field()
     game_updatetime = scrapy.Field()
     game_package = scrapy.Field()
+    game_rate = scrapy.Field()
+    game_downloadnum = scrapy.Field()
+    game_commentnum = scrapy.Field()
+    game_topicnum = scrapy.Field()
     record_time = scrapy.Field()
 
 class GamedataItem(scrapy.Item):
     # define the fields for your item here like:
     # name = scrapy.Field()
+    game_link = scrapy.Field()
     game_name = scrapy.Field()
     game_rate = scrapy.Field()
     game_downloadnum = scrapy.Field()

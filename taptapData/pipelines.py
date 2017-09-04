@@ -23,10 +23,12 @@ class TaptapdataPipeline(object):
     def process_item(self, item, spider):
         if item.__class__ == TaptapdataItem:
             try:
-                sql1 = 'INSERT INTO taptap_gameinfo VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)'
+                sql1 = 'REPLACE INTO taptap_gameinfo VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)'
                 param1 = (item['game_name'],item['game_link'],item['game_img'],item['game_type'],item['game_tag'], \
                          item['game_desc'],item['game_size'], \
-                         item['game_version'],item['game_updatetime'], item['game_package'],item['record_time'])
+                         item['game_version'],item['game_updatetime'], item['game_package'],\
+                         item['game_rate'],item['game_downloadnum'],item['game_commentnum'],item['game_topicnum'], \
+                         item['record_time'])
                 self.cursor.execute(sql1,param1)
                 self.connect.commit()
             except pymysql.Warning,w:
@@ -35,8 +37,8 @@ class TaptapdataPipeline(object):
                 print "Error:%s" % str(e)
         if item.__class__ == GamedataItem:
             try:
-                sql2 = 'INSERT INTO taptap_gamedata VALUES(%s,%s,%s,%s,%s,%s,%s)'
-                param2 = (item['game_name'],item['game_type'],item['game_rate'],item['game_downloadnum'], \
+                sql2 = 'INSERT INTO taptap_gamedata VALUES(%s,%s,%s,%s,%s,%s,%s,%s)'
+                param2 = (item['game_link'],item['game_name'],item['game_type'],item['game_rate'],item['game_downloadnum'], \
                           item['game_commentnum'],item['game_topicnum'], item['record_time'])
                 self.cursor.execute(sql2,param2)
                 self.connect.commit()

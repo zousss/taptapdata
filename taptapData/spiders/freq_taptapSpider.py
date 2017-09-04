@@ -46,7 +46,7 @@ class ninegameSpider(CrawlSpider):
         if re.search(r'page',response.url):
             tgames = self.get_game_link()
             for tgame in tgames:
-                game_info = scrapy.Request(tgame[0],callback=self.parse_game_data)
+                game_info = scrapy.Request(tgame[0],callback=self.parse_game)
                 game_info.meta['game_type'] = tgame[1]
                 yield game_info
 
@@ -73,37 +73,58 @@ class ninegameSpider(CrawlSpider):
     def parse_game(self,response):
         print '###[GAME LINK]:',response.url
         taptapdataItem = TaptapdataItem()
+        gamedataItem = GamedataItem()
         taptapdataItem['game_type'] = response.xpath('//div[@class="container"]/div/ol/li[3]/a/text()').extract()[0]
+        gamedataItem['game_type'] = taptapdataItem['game_type']
         taptapdataItem['game_link'] = response.url
+        gamedataItem['game_link'] = response.url
         try:
             for game_info in response.xpath('//div[@class="container"]/div/div/section[1]'):
-                taptapdataItem['game_name'] = ','.join(game_info.xpath('div[1]/div[2]/h1/text()').extract())
+                game_name = ','.join(game_info.xpath('div[1]/div[2]/h1/text()').extract())
+                game_rate = ','.join(game_info.xpath('div[1]/span/span/span/text()').extract()) if game_info.xpath('div[1]/span/span/span/text()').extract() else 0
+                game_downloadnum = re.search(r'(\d+)\D',','.join(game_info.xpath('div[1]/div[2]/div[2]/div[1]/span/text()').extract())).group(1)
+                game_commentnum = ','.join(game_info.xpath('div[1]/div[3]/ul/li[2]/a/small/text()').extract()) if ','.join(game_info.xpath('div[1]/div[3]/ul/li[2]/a/small/text()').extract()) else 0
+                game_topicnum = ','.join(game_info.xpath('div[1]/div[3]/ul/li[3]/a/small/text()').extract()) if ','.join(game_info.xpath('div[1]/div[3]/ul/li[3]/a/small/text()').extract()) else 0
+
+                taptapdataItem['game_name'] = game_name
                 taptapdataItem['game_img'] = ','.join(game_info.xpath('div[1]/div[1]/div/img/@src').extract())
                 taptapdataItem['game_size'] = ','.join(game_info.xpath('div[2]/div[7]/ul/li[1]/span[2]/text()').extract()) + ','.join(game_info.xpath('div[2]/div[6]/ul/li[1]/span[2]/text()').extract())+ ','.join(game_info.xpath('div[2]/div[5]/ul/li[1]/span[2]/text()').extract())+ ','.join(game_info.xpath('div[2]/div[4]/ul/li[1]/span[2]/text()').extract())
                 taptapdataItem['game_package'] = ','.join(game_info.xpath('div[1]/div[2]/div[2]/div[2]/@data-app-identifier').extract())
                 taptapdataItem['game_version'] = ','.join(game_info.xpath('div[2]/div[7]/ul/li[2]/span[2]/text()').extract()) + ','.join(game_info.xpath('div[2]/div[6]/ul/li[2]/span[2]/text()').extract()) + ','.join(game_info.xpath('div[2]/div[5]/ul/li[2]/span[2]/text()').extract())+ ','.join(game_info.xpath('div[2]/div[4]/ul/li[2]/span[2]/text()').extract())
                 taptapdataItem['game_updatetime'] = ','.join(game_info.xpath('div[2]/div[7]/ul/li[3]/span[2]/text()').extract()) + ','.join(game_info.xpath('div[2]/div[6]/ul/li[3]/span[2]/text()').extract()) + ','.join(game_info.xpath('div[2]/div[5]/ul/li[3]/span[2]/text()').extract())+ ','.join(game_info.xpath('div[2]/div[4]/ul/li[3]/span[2]/text()').extract())
-            taptapdataItem['game_tag'] = ','.join(response.xpath('//*[@id="appTag"]/li/a/text()').extract()).strip().replace(' ','').replace('\t','')
-            taptapdataItem['game_desc'] = ','.join(response.xpath('//*[@id="description"]/text()').extract()).strip().replace(' ','').replace('\t','')
-            taptapdataItem['record_time'] = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-            yield taptapdataItem
+                taptapdataItem['game_tag'] = ','.join(response.xpath('//*[@id="appTag"]/li/a/text()').extract()).strip().replace(' ','').replace('\t','')
+                taptapdataItem['game_desc'] = ','.join(response.xpath('//*[@id="description"]/text()').extract()).strip().replace(' ','').replace('\t','')
+                taptapdataItem['game_rate'] = game_rate
+                taptapdataItem['game_downloadnum'] = game_downloadnum
+                taptapdataItem['game_commentnum'] = game_commentnum
+                taptapdataItem['game_topicnum'] = game_topicnum
+                taptapdataItem['record_time'] = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+                yield taptapdataItem
+
+                gamedataItem['game_name'] = game_name
+                gamedataItem['game_rate'] = game_rate
+                gamedataItem['game_downloadnum'] = game_downloadnum
+                gamedataItem['game_commentnum'] = game_commentnum
+                gamedataItem['game_topicnum'] = game_topicnum
+                gamedataItem['record_time'] = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+                yield gamedataItem
         except:
             print '[ERROR LINK]:',response.url
 
-    #解析游戏数据
-    def parse_game_data(self,response):
-        print '###[GAME DATA]:',response.url
-        gamedataItem = GamedataItem()
-        gamedataItem['game_type'] = response.meta['game_type']
-        try:
-            for game_info in response.xpath('//div[@class="container"]/div/div/section[1]'):
-                gamedataItem['game_name'] = ','.join(game_info.xpath('div[1]/div[2]/h1/text()').extract())
-                #gamedataItem['game_rate'] = ','.join(game_info.xpath('div[1]/div[2]/div[2]/div[1]/p/span/text()').extract())
-                gamedataItem['game_rate'] = ','.join(game_info.xpath('div[1]/span/span/span/text()').extract()) if game_info.xpath('div[1]/span/span/span/text()').extract() else 0
-                gamedataItem['game_downloadnum'] = re.search(r'(\d+)\D',','.join(game_info.xpath('div[1]/div[2]/div[2]/div[1]/span/text()').extract())).group(1)
-                gamedataItem['game_commentnum'] = ','.join(game_info.xpath('div[1]/div[3]/ul/li[2]/a/small/text()').extract()) if ','.join(game_info.xpath('div[1]/div[3]/ul/li[2]/a/small/text()').extract()) else 0
-                gamedataItem['game_topicnum'] = ','.join(game_info.xpath('div[1]/div[3]/ul/li[3]/a/small/text()').extract()) if ','.join(game_info.xpath('div[1]/div[3]/ul/li[3]/a/small/text()').extract()) else 0
-            gamedataItem['record_time'] = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-            yield gamedataItem
-        except:
-            print '[ERROR LINK]:',response.url
+    ##解析游戏数据
+    #def parse_game_data(self,response):
+    #    print '###[GAME DATA]:',response.url
+    #    gamedataItem = GamedataItem()
+    #    gamedataItem['game_type'] = response.meta['game_type']
+    #    try:
+    #        for game_info in response.xpath('//div[@class="container"]/div/div/section[1]'):
+    #            gamedataItem['game_name'] = ','.join(game_info.xpath('div[1]/div[2]/h1/text()').extract())
+    #            #gamedataItem['game_rate'] = ','.join(game_info.xpath('div[1]/div[2]/div[2]/div[1]/p/span/text()').extract())
+    #            gamedataItem['game_rate'] = ','.join(game_info.xpath('div[1]/span/span/span/text()').extract()) if game_info.xpath('div[1]/span/span/span/text()').extract() else 0
+    #            gamedataItem['game_downloadnum'] = re.search(r'(\d+)\D',','.join(game_info.xpath('div[1]/div[2]/div[2]/div[1]/span/text()').extract())).group(1)
+    #            gamedataItem['game_commentnum'] = ','.join(game_info.xpath('div[1]/div[3]/ul/li[2]/a/small/text()').extract()) if ','.join(game_info.xpath('div[1]/div[3]/ul/li[2]/a/small/text()').extract()) else 0
+    #            gamedataItem['game_topicnum'] = ','.join(game_info.xpath('div[1]/div[3]/ul/li[3]/a/small/text()').extract()) if ','.join(game_info.xpath('div[1]/div[3]/ul/li[3]/a/small/text()').extract()) else 0
+    #        gamedataItem['record_time'] = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+    #        yield gamedataItem
+    #    except:
+    #        print '[ERROR LINK]:',response.url
